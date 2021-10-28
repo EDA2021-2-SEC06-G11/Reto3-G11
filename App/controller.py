@@ -29,6 +29,10 @@ import csv
 El controlador se encarga de mediar entre la vista y el modelo.
 """
 
+# ___________________________________________________
+#  Inicializacion del catalogo
+# ___________________________________________________
+
 def init():
     """
     Llama la funcion de inicializacion  del modelo.
@@ -37,7 +41,11 @@ def init():
     catalog = model.newCatalog()
     return catalog
 
-# Inicialización del Catálogo de libros
+# ___________________________________________________
+#  Funciones para la carga de datos y almacenamiento
+#  de datos en los modelos
+# ___________________________________________________
+
 def loadData(catalog, archivo):
     file = cf.data_dir + archivo
     input_file = csv.DictReader(open(file, encoding="utf-8"),
@@ -46,8 +54,15 @@ def loadData(catalog, archivo):
         model.addEvent(catalog, avistamiento)
     return catalog
 
-# Funciones para la carga de datos
-
 # Funciones de ordenamiento
 
 # Funciones de consulta sobre el catálogo
+
+def contarAvistamientos(catalog,ciudad):
+    model.crearArbolCiudades(catalog)
+    tamanoArbol = model.Size(catalog['cities'])
+    alturaArbol = model.Height(catalog['cities'])
+    numUFOsights = model.mapsize(catalog['locations'])
+    listTop5Sights,listTop5sightsNum  = model.getTop5sightscities(catalog)
+    list3firtandlast = model.getlist3firtandlast(catalog,ciudad)
+    return tamanoArbol, alturaArbol, numUFOsights, listTop5Sights, listTop5sightsNum, list3firtandlast 

@@ -25,6 +25,7 @@
  """
 
 
+from DISClib.DataStructures.arraylist import iterator
 import config as cf
 from DISClib.ADT import list as lt
 from DISClib.ADT import map as mp
@@ -39,41 +40,42 @@ los mismos.
 """
 def newCatalog():
 
-    catalog = { 'event': None,
-                'date': None,
-                'duration': None,
-                'hour': None,
-                'location': None}
+    catalog = { 'events': None,
+                'dates': None,
+                'durations': None,
+                'hours': None,
+                'locations': None}
 
-    catalog['event'] = lt.newList('SINGLE_LINKED')
+    catalog['events'] = lt.newList('SINGLE_LINKED')
     
-    catalog['date'] = om.newMap(omaptype='RBT',
+    catalog['dates'] = om.newMap(omaptype='RBT',
                                       comparefunction=compareDates)
-    catalog['duration'] = om.newMap(omaptype='RBT',
+    catalog['durations'] = om.newMap(omaptype='RBT',
                                       comparefunction=compareDuration)
-    catalog['hour'] = om.newMap(omaptype='RBT',
+    catalog['hours'] = om.newMap(omaptype='RBT',
                                       comparefunction=compareHour)
-    catalog['location'] = om.newMap(omaptype='RBT',
-                                      comparefunction=compareLocation)
+    catalog['locations'] = mp.newMap(1000,
+                                  maptype='PROBING',
+                                  loadfactor=0.5)
 
     return catalog
 
 def addEvent(catalog, event):
     #event
-    lt.addLast(catalog['event'], event)
+    lt.addLast(catalog['events'], event)
 
     #date
     
-    updateDateIndex(catalog['date'], event)
+    updateDateIndex(catalog['dates'], event)
     #duration
 
-    updateDurationIndex(catalog['duration'], event)
+    updateDurationIndex(catalog['durations'], event)
     #hour
 
-    updateHourIndex(catalog['hour'], event)
-    #location
+    updateHourIndex(catalog['hours'], event)
 
-    updateLocationIndex(catalog['location'], event)
+    #location
+    addLocation(catalog['locations'], event)
 
     return catalog
 
@@ -90,18 +92,45 @@ def updateHourIndex(mapa, event):
     a = 'a'
 
 
-def updateLocationIndex(mapa, event):
-    a = 'a'
-
-
-
 def addDateIndex(datentry, event):\
     b = 'b'
+
+def addLocation(mapa, event):
+    location = event['city']
+    try:
+        arbol = me.getValue(mp.get(mapa,location))
+    except:
+        arbol = om.newMap(omaptype='RBT',
+                        comparefunction=compareDates)
+    om.put(arbol,event['datetime'],event)
+    mp.put(mapa,location,arbol)
+
 # Construccion de modelos
 
 # Funciones para agregar informacion al catalogo
 
 # Funciones para creacion de datos
+
+def crearArbolCiudades(catalog):
+    catalog['cities'] = om.newMap(omaptype='RBT',
+                        comparefunction=compareSize)
+
+    keylist = mp.keySet(catalog['locations'])
+    iterador = lt.iterator(keylist)
+    for ciudad in iterador:
+        ## Hacer un arbol que guarde como keys los tamanos de los arboles del anterior diccionario y
+        ## guarde como valores los nombres de las ciudades a los que estos arboles pertenecen.
+        ## Que pasa si tiene el mismo numero de avistamientos? hago un array que guarde los nombres de todas las ciudades.
+        arbol = me.getValue(mp.get(catalog['locations'],ciudad))
+        llave = om.size(arbol)
+        
+        try: 
+            lista = me.getValue(om.get(catalog['cities'],llave))
+        except:
+            lista = lt.newList()
+        lt.addLast(lista,ciudad)
+        om.put(catalog['cities'],llave,lista)
+
 
 # Funciones de consulta
 
@@ -140,7 +169,46 @@ def maxKey(mapa):
     """
     return om.maxKey(mapa)
 
+def mapsize(mapa):
+    return mp.size(mapa)
+
+def getTop5sightscities(catalog):
+    resp = lt.newList()
+    resp2 = lt.newList()
+    keyset = om.keySet(catalog['cities'])
+    iterador = lt.iterator(keyset)
+    sentinel = 0
+    for number in iterador:  
+        lista = me.getValue(om.get(catalog['cities'],number))
+        iterador2 = lt.iterator(lista)
+        for ciudad in iterador2:
+            if(sentinel > lt.size(lista)-5):
+                lt.addLast(resp,ciudad)
+                lt.addLast(resp2, number)
+                sentinel +=1
+
+    return resp, resp2
+
+def getlist3firtandlast(catalog,ciudad):
+    resp = lt.newList()
+    arbol = me.getValue(mp.get(catalog['locations'],ciudad))
+    keyset = om.keySet(arbol)
+    iterador = lt.iterator(keyset)
+    for key in iterador:
+        sighting = me.getValue(om.get(arbol, key))
+        lt.addLast(resp,sighting)
+    return resp
+
 # Funciones utilizadas para comparar elementos dentro de una lista
+
+def compareSize(key1,key2):
+
+    if (key1 == key2):
+        return 0
+    elif (key1 < key2):
+        return 1
+    else:
+        return -1
 
 def compareDates(date1, date2):
 
@@ -167,13 +235,7 @@ def compareDuration(duration1, duration2):
     else:
         return -1
 
-def compareLocation(location1, location2):
-    if (location1 == location2):
-        return 0
-    elif (location1 > location2):
-        return 1
-    else:
-        return -1
+
 
 
 # Funciones de ordenamiento
